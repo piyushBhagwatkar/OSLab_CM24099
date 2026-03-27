@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LRU Page Replacement Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif; }
+
+body {
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  color:#fff;
+}
+
+header {
+  text-align:center;
+  padding:40px 20px;
+}
+
+header h1 {
+  font-size:2.5rem;
+  font-weight:600;
+  letter-spacing:1px;
+}
+
+header p { opacity:0.8; margin-top:8px; }
+
+.container {
+  max-width:1100px;
+  margin:auto;
+  padding:20px;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+
+.card {
+  background: rgba(255,255,255,0.08);
+  border-radius:18px;
+  padding:20px;
+  backdrop-filter: blur(15px);
+  box-shadow:0 12px 30px rgba(0,0,0,0.3);
+  transition:0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+h2 { margin-bottom:15px; font-weight:500; }
+
+label { margin-top:10px; display:block; }
+
+input {
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  margin-top:5px;
+}
+
+button {
+  margin-top:15px;
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background: linear-gradient(45deg,#ff416c,#ff4b2b);
+  color:#fff;
+  font-size:1rem;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover {
+  transform:scale(1.05);
+}
+
+.frames {
+  display:flex;
+  gap:10px;
+  margin:10px 0;
+}
+
+.frame {
+  background:#fff;
+  color:#333;
+  padding:12px;
+  border-radius:10px;
+  min-width:45px;
+  text-align:center;
+  font-weight:bold;
+  animation:pop 0.3s ease;
+}
+
+@keyframes pop {
+  from { transform:scale(0.6); opacity:0; }
+  to { transform:scale(1); opacity:1; }
+}
+
+.hit { color:#00ffa6; }
+.fault { color:#ff5e5e; }
+
+.result p { margin:5px 0; }
+
+.full {
+  grid-column:1/-1;
+}
+
+footer {
+  text-align:center;
+  padding:20px;
+  opacity:0.6;
+}
+
+@media(max-width:800px) {
+  .grid { grid-template-columns:1fr; }
+  header h1 { font-size:1.8rem; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>LRU Page Replacement Simulator</h1>
+  <p>Interactive OS Practical Visualization</p>
+</header>
+
+<div class="container">
+
+<div class="grid">
+
+<div class="card">
+  <h2>🎯 Aim</h2>
+  <p>To simulate the Least Recently Used (LRU) page replacement algorithm and calculate page hits, page faults, and their respective percentages for a given reference string.</p>
+</div>
+
+<div class="card">
+  <h2>⚙️ Input</h2>
+
+  <label>Number of Frames</label>
+  <input type="number" id="frames" value="3">
+
+  <label>Page Reference String</label>
+  <input type="text" id="pages" value="1,2,3,4,1,2,5,1,2,3,4,5">
+
+  <button onclick="runLRU()">Run Simulation</button>
+</div>
+
+<div class="card full">
+  <h2>📊 Simulation Output</h2>
+  <div id="output"></div>
+</div>
+
+<div class="card full">
+  <h2>📘 Theory</h2>
+  <p>The LRU (Least Recently Used) algorithm replaces the page that has not been used for the longest period of time. It improves performance by keeping frequently used pages in memory.</p>
+</div>
+
+</div>
+
+</div>
+
+<footer>
+  <p>OS Practical | LRU Algorithm | Designed by Student</p>
+</footer>
+
+<script>
+function runLRU() {
+  let frames = parseInt(document.getElementById('frames').value);
+  let pages = document.getElementById('pages').value.split(',').map(Number);
+
+  let frameArr = [];
+  let recent = [];
+  let hits = 0, faults = 0;
+
+  let html = "";
+
+  pages.forEach(page => {
+    if (frameArr.includes(page)) {
+      hits++;
+      recent = recent.filter(p => p !== page);
+      recent.push(page);
+      html += `<p class='hit'><b>${page}</b> → HIT</p>`;
+    } else {
+      faults++;
+      if (frameArr.length < frames) {
+        frameArr.push(page);
+      } else {
+        let lru = recent.shift();
+        let index = frameArr.indexOf(lru);
+        frameArr[index] = page;
+      }
+      recent.push(page);
+      html += `<p class='fault'><b>${page}</b> → FAULT</p>`;
+    }
+
+    html += "<div class='frames'>";
+    frameArr.forEach(f => {
+      html += `<div class='frame'>${f}</div>`;
+    });
+    html += "</div><hr>";
+  });
+
+  let total = pages.length;
+  let hitPer = ((hits / total) * 100).toFixed(2);
+  let faultPer = ((faults / total) * 100).toFixed(2);
+
+  html += `<div class='result'>
+    <p><b>Total Requests:</b> ${total}</p>
+    <p><b>Hits:</b> ${hits}</p>
+    <p><b>Faults:</b> ${faults}</p>
+    <p><b>Hit %:</b> ${hitPer}%</p>
+    <p><b>Fault %:</b> ${faultPer}%</p>
+  </div>`;
+
+  document.getElementById('output').innerHTML = html;
+}
+</script>
+
+</body>
+</html>
